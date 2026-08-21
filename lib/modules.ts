@@ -6,7 +6,25 @@
  * มีหน้าจอและ API ของตัวเองแยกต่างหาก
  */
 
-export type FieldType = "text" | "number" | "date" | "select" | "textarea";
+export type FieldType =
+  | "text"
+  | "number"
+  | "date"
+  | "time"
+  | "select"
+  | "textarea"
+  | "lookup";
+
+/** ตัวเลือกที่ดึงจากตารางอื่น เช่น เลือกรถจากทะเบียนรถ */
+export interface LookupConfig {
+  /** ชื่อตารางที่ไปดึงตัวเลือก */
+  table: string;
+  /** นิพจน์ SQL สำหรับข้อความที่แสดง เช่น "plate || ' — ' || vehicle_name" */
+  labelExpr: string;
+  /** เงื่อนไขกรองเพิ่มเติม เช่น { column: 'status', value: 'ปฏิบัติงาน' } */
+  filter?: { column: string; value: string };
+  orderBy?: string;
+}
 
 export interface FieldDef {
   key: string;
@@ -19,6 +37,7 @@ export interface FieldDef {
   /** ระบบคำนวณให้ ผู้ใช้แก้ไม่ได้ */
   computed?: boolean;
   help?: string;
+  lookup?: LookupConfig;
 }
 
 export interface SubPage {

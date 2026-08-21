@@ -2,7 +2,9 @@ import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getModule } from "@/lib/modules";
 import { canAccessModule } from "@/lib/permissions";
+import { getSubTable } from "@/lib/subtables";
 import ModuleTabs from "@/components/ModuleTabs";
+import SubTableManager from "@/components/SubTableManager";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +38,8 @@ export default async function ModuleSubPage({
   const page = mod.subPages.find((sp) => sp.slug === slug);
   if (!page) notFound();
 
+  const subTable = getSubTable(moduleKey, slug);
+
   return (
     <div>
       <div className="mb-4">
@@ -47,15 +51,19 @@ export default async function ModuleSubPage({
 
       <ModuleTabs mod={mod} />
 
-      <div className="bg-white rounded-xl border p-8 text-center">
-        <div className="text-4xl mb-3">🚧</div>
-        <div className="font-semibold text-slate-700 mb-1">หน้านี้อยู่ระหว่างการพัฒนา</div>
-        <p className="text-sm text-slate-500 max-w-md mx-auto">
-          ส่วน &ldquo;{page.label}&rdquo; ของ{mod.label} ยังพัฒนาไม่เสร็จ
-          <br />
-          ฟังก์ชันจะทยอยเปิดใช้งานตามลำดับการพัฒนา
-        </p>
-      </div>
+      {subTable ? (
+        <SubTableManager def={subTable} />
+      ) : (
+        <div className="bg-white rounded-xl border p-8 text-center">
+          <div className="text-4xl mb-3">🚧</div>
+          <div className="font-semibold text-slate-700 mb-1">หน้านี้อยู่ระหว่างการพัฒนา</div>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">
+            ส่วน &ldquo;{page.label}&rdquo; ของ{mod.label} ยังพัฒนาไม่เสร็จ
+            <br />
+            ฟังก์ชันจะทยอยเปิดใช้งานตามลำดับการพัฒนา
+          </p>
+        </div>
+      )}
     </div>
   );
 }

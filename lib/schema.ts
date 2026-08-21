@@ -669,6 +669,18 @@ const STATEMENTS: string[] = [
   )`,
   `CREATE INDEX IF NOT EXISTS budget_txn_project_idx ON budget_transaction (project_id, txn_date)`,
 
+  /* ── เติมคอลัมน์ผู้แก้ไขล่าสุดให้ตารางบันทึกที่สร้างไว้ก่อนหน้า ──
+     ทุกตารางต้องมี updated_at/updated_by เพื่อให้หน้าจอและ Audit Log
+     ทำงานได้เหมือนกันทุกตาราง (ใช้ ADD COLUMN IF NOT EXISTS จึงรันซ้ำได้) */
+  `ALTER TABLE budget_transaction ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`,
+  `ALTER TABLE budget_transaction ADD COLUMN IF NOT EXISTS updated_by TEXT`,
+  `ALTER TABLE fridge_temp_log ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`,
+  `ALTER TABLE fridge_temp_log ADD COLUMN IF NOT EXISTS updated_by TEXT`,
+  `ALTER TABLE stock_movement ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`,
+  `ALTER TABLE stock_movement ADD COLUMN IF NOT EXISTS updated_by TEXT`,
+  `ALTER TABLE supply_movement ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`,
+  `ALTER TABLE supply_movement ADD COLUMN IF NOT EXISTS updated_by TEXT`,
+
   /* ═══════════════ 8. มาตรฐานหน่วยบริการ PCU ═══════════════ */
 
   `CREATE TABLE IF NOT EXISTS pcu_criteria (
