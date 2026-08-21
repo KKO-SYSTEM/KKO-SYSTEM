@@ -21,6 +21,8 @@ export interface SubTableDef {
   defaultSortDir: "asc" | "desc";
   /** กรองแถวคงที่ เช่น ใบเบิกยา vs ใบเบิกวัคซีน ใช้ตารางเดียวกัน */
   fixedFilter?: { column: string; value: string };
+  /** เส้นทางหน้ารายละเอียด (สำหรับเอกสารที่มีรายการย่อยในใบ) */
+  detailPath?: string;
   /** เส้นทางพิมพ์เอกสาร เช่น /print/vehicle-request/[id] */
   printPath?: string;
   printLabel?: string;
@@ -129,6 +131,7 @@ const SUB_LIST: SubTableDef[] = [
     defaultSort: "req_date",
     defaultSortDir: "desc",
     fixedFilter: { column: "kind", value: "drug" },
+    detailPath: "/m/pharmacy/requisition",
     printPath: "/print/requisition",
     printLabel: "พิมพ์ใบเบิกยา",
     fields: [
@@ -160,6 +163,7 @@ const SUB_LIST: SubTableDef[] = [
     defaultSort: "req_date",
     defaultSortDir: "desc",
     fixedFilter: { column: "kind", value: "vaccine" },
+    detailPath: "/m/vaccine/requisition",
     printPath: "/print/requisition",
     printLabel: "พิมพ์ใบเบิกวัคซีน",
     fields: [

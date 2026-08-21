@@ -279,6 +279,15 @@ export default function SubTableManager({ def }: { def: SubTableDef }) {
                     ))}
                     {canWrite && (
                       <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                        {def.detailPath && (
+                          <a
+                            href={`${def.detailPath}/${row.id}`}
+                            title="เปิดรายละเอียด / จัดการรายการ"
+                            className="text-brand-700 hover:underline px-1 text-xs font-medium"
+                          >
+                            เปิด
+                          </a>
+                        )}
                         {def.printPath && (
                           <a
                             href={`${def.printPath}/${row.id}`}
