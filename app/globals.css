@@ -15,11 +15,77 @@
   --color-brand-900: #123b34;
 }
 
+/* ─── โทนสีสำหรับกราฟ (ผ่านการตรวจ contrast และตาบอดสีแล้ว) ─── */
+:root {
+  --surface-1: #ffffff;
+  --surface-2: #f6f8f9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --grid-line: #e8edf1;
+
+  --series-1: #2a78d6; /* น้ำเงิน */
+  --series-2: #eb6834; /* ส้ม */
+  --series-3: #1baf7a; /* เขียวน้ำทะเล */
+  --series-4: #eda100; /* เหลือง */
+  --series-5: #e87ba4; /* ชมพู */
+
+  --status-good: #1baf7a;
+  --status-warn: #eda100;
+  --status-serious: #eb6834;
+  --status-critical: #e34948;
+}
+
 html,
 body {
   font-family: var(--font-sans);
-  background: #f6f8f9;
-  color: #1e293b;
+  background: var(--surface-2);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* การ์ดพื้นฐานของทั้งระบบ */
+.card {
+  background: var(--surface-1);
+  border: 1px solid #e6ebef;
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+.card-hover {
+  transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+}
+.card-hover:hover {
+  box-shadow: 0 6px 20px rgb(15 23 42 / 0.08);
+  border-color: #d5dee5;
+  transform: translateY(-1px);
+}
+
+/* แถบความคืบหน้า */
+.meter {
+  height: 8px;
+  border-radius: 999px;
+  background: #edf2f5;
+  overflow: hidden;
+}
+.meter > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.fade-up {
+  animation: fadeUp 0.35s ease both;
 }
 
 ::-webkit-scrollbar {
