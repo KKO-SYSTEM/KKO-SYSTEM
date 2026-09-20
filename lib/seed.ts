@@ -297,6 +297,69 @@ export async function seedSampleData(by: string): Promise<number> {
       );
       n++;
     }
+
+    /* ข้อมูลย้อนหลัง 12 เดือน เพื่อให้กราฟแนวโน้มมีข้อมูลให้ดู
+       จำนวนผู้ป่วยต่อเดือนอิงรูปแบบตามฤดูกาลจริงของไทย
+       (ไข้เลือดออกสูงช่วงฤดูฝน มิ.ย.-ก.ย. / ไข้หวัดใหญ่สูงช่วงปลายปีและต้นฝน) */
+    const seasonal: { monthsAgo: number; disease: string; code: string; count: number }[] = [
+      { monthsAgo: 11, disease: "ไข้หวัดใหญ่", code: "15", count: 3 },
+      { monthsAgo: 10, disease: "ไข้หวัดใหญ่", code: "15", count: 4 },
+      { monthsAgo: 10, disease: "อุจจาระร่วง", code: "02", count: 2 },
+      { monthsAgo: 9, disease: "ไข้หวัดใหญ่", code: "15", count: 2 },
+      { monthsAgo: 8, disease: "อุจจาระร่วง", code: "02", count: 3 },
+      { monthsAgo: 7, disease: "มือ เท้า ปาก", code: "71", count: 2 },
+      { monthsAgo: 6, disease: "ไข้เลือดออก", code: "26", count: 2 },
+      { monthsAgo: 5, disease: "ไข้เลือดออก", code: "26", count: 4 },
+      { monthsAgo: 5, disease: "มือ เท้า ปาก", code: "71", count: 3 },
+      { monthsAgo: 4, disease: "ไข้เลือดออก", code: "26", count: 6 },
+      { monthsAgo: 3, disease: "ไข้เลือดออก", code: "26", count: 8 },
+      { monthsAgo: 3, disease: "อุจจาระร่วง", code: "02", count: 2 },
+      { monthsAgo: 2, disease: "ไข้เลือดออก", code: "26", count: 7 },
+      { monthsAgo: 2, disease: "มือ เท้า ปาก", code: "71", count: 2 },
+      { monthsAgo: 1, disease: "ไข้เลือดออก", code: "26", count: 5 },
+    ];
+
+    const villages = [
+      "หมู่ 1 บ้านกลาง",
+      "หมู่ 2 บ้านท่าช้าง",
+      "หมู่ 3 บ้านสุขใจ",
+      "หมู่ 4 บ้านหนองบัว",
+      "หมู่ 5 บ้านโนนสูง",
+    ];
+
+    let seq = 0;
+    for (const s of seasonal) {
+      for (let i = 0; i < s.count; i++) {
+        seq++;
+        const day = 3 + ((seq * 7) % 24); // กระจายวันภายในเดือน
+        const age = 3 + ((seq * 13) % 70);
+        await query(
+          `INSERT INTO disease_case
+             (patient_name, gender, age_year, disease_name, disease_code,
+              onset_date, treat_date, village_name, patient_type, treat_result,
+              report_date, created_by, updated_by)
+           VALUES ($1,$2,$3,$4,$5,
+                   (date_trunc('month', CURRENT_DATE) - ($6 || ' months')::interval + ($7 || ' days')::interval)::date,
+                   (date_trunc('month', CURRENT_DATE) - ($6 || ' months')::interval + ($7 || ' days')::interval)::date,
+                   $8, $9, 'หาย',
+                   (date_trunc('month', CURRENT_DATE) - ($6 || ' months')::interval + ($7 || ' days')::interval)::date,
+                   $10, $10)`,
+          [
+            `ผู้ป่วยรายที่ ${seq} (ข้อมูลตัวอย่าง)`,
+            seq % 2 === 0 ? "ชาย" : "หญิง",
+            age,
+            s.disease,
+            s.code,
+            String(s.monthsAgo),
+            String(day),
+            villages[seq % villages.length],
+            seq % 9 === 0 ? "ผู้ป่วยใน" : "ผู้ป่วยนอก",
+            by,
+          ],
+        );
+        n++;
+      }
+    }
   }
 
   /* โครงการ + งบประมาณ */
@@ -397,6 +460,180 @@ export async function seedSampleData(by: string): Promise<number> {
       await query(
         `INSERT INTO announcement (title, body, publish_date, created_by) VALUES ($1,$2,$3,$4)`,
         [...a, by],
+      );
+      n++;
+    }
+  }
+
+  /* ── พื้นที่ระบาด ── */
+  if ((await count("outbreak_area")) === 0) {
+    const areas = [
+      ["บ้านหนองบัว หมู่ 3", "3", "ไข้เลือดออก", "2026-06-12", "2026-08-28", 9, 640, "สูง", "กำลังระบาด"],
+      ["บ้านโนนสูง หมู่ 5", "5", "ไข้เลือดออก", "2026-05-02", "2026-06-30", 4, 520, "ปานกลาง", "ควบคุมได้"],
+      ["บ้านคลองใหม่ หมู่ 1", "1", "อุจจาระร่วง", "2026-07-08", "2026-07-20", 6, 410, "ปานกลาง", "ยุติการระบาด"],
+    ];
+    for (const a of areas) {
+      const cases = Number(a[5]);
+      const pop = Number(a[6]);
+      await query(
+        `INSERT INTO outbreak_area
+          (area_name, village_no, disease_name, first_case_date, last_case_date, case_count,
+           population, attack_rate, risk_level, status, measure, responsible, created_by, updated_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$13)`,
+        [
+          a[0],
+          a[1],
+          a[2],
+          a[3],
+          a[4],
+          cases,
+          pop,
+          Math.round((cases / pop) * 1000 * 100) / 100,
+          a[7],
+          a[8],
+          "สำรวจและกำจัดลูกน้ำยุงลาย พ่นหมอกควันรัศมี 100 เมตร และให้สุขศึกษาในชุมชน",
+          "นายวิชัย ศรีสุข",
+          by,
+        ],
+      );
+      n++;
+    }
+  }
+
+  /* ── เขตรับผิดชอบ อสม. ── */
+  if ((await count("vhv_area")) === 0) {
+    const vhvs = await query<{ id: number; village_no: string | null; village_name: string | null }>(
+      `SELECT id, village_no, village_name FROM vhv ORDER BY id LIMIT 6`,
+    );
+    for (const v of vhvs) {
+      await query(
+        `INSERT INTO vhv_area
+          (vhv_id, village_no, village_name, household_count, population_count,
+           elderly_count, chronic_count, disabled_count, created_by, updated_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$9)`,
+        [
+          v.id,
+          v.village_no,
+          v.village_name,
+          12 + (v.id % 5) * 3,
+          48 + (v.id % 5) * 11,
+          6 + (v.id % 4),
+          4 + (v.id % 3),
+          1 + (v.id % 2),
+          by,
+        ],
+      );
+      n++;
+    }
+  }
+
+  /* ── ประชุม อสม. + บันทึกการเข้าร่วม ── */
+  if ((await count("vhv_meeting")) === 0) {
+    const meeting = await query<{ id: number }>(
+      `INSERT INTO vhv_meeting
+        (meeting_no, meeting_date, location, agenda, resolution, recorder_name, chairman_name, created_by, updated_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$8) RETURNING id`,
+      [
+        "8/2569",
+        "2026-08-15",
+        "ห้องประชุม รพ.สต.",
+        "1. เรื่องที่ประธานแจ้งให้ทราบ\n2. รายงานสถานการณ์ไข้เลือดออกในพื้นที่\n3. การเตรียมรณรงค์ตรวจคัดกรองเบาหวาน-ความดัน\n4. เรื่องอื่น ๆ",
+        "ที่ประชุมมีมติให้ อสม. ทุกหมู่สำรวจลูกน้ำยุงลายทุกสัปดาห์ และรายงานผลภายในวันศุกร์ของทุกสัปดาห์",
+        "นางสาวกัญญา รุ่งเรือง",
+        "นางสาวสุนิสา แก้วมณี",
+        by,
+      ],
+    );
+    n++;
+
+    const meetingId = meeting[0]?.id;
+    if (meetingId) {
+      const vhvs = await query<{ id: number }>(`SELECT id FROM vhv ORDER BY id`);
+      const statuses = ["มา", "มา", "มา", "มาสาย", "ลา", "มา", "ขาด", "มา"];
+      for (let i = 0; i < vhvs.length; i++) {
+        await query(
+          `INSERT INTO vhv_attendance (meeting_id, vhv_id, status, created_by, updated_by)
+           VALUES ($1,$2,$3,$4,$4) ON CONFLICT DO NOTHING`,
+          [meetingId, vhvs[i].id, statuses[i % statuses.length], by],
+        );
+        n++;
+      }
+    }
+  }
+
+  /* ── รายงานผลโครงการ ── */
+  if ((await count("project_report")) === 0) {
+    const projects = await query<{ id: number; budget: string | null }>(
+      `SELECT id, budget FROM project ORDER BY id LIMIT 3`,
+    );
+    const periods = ["ไตรมาส 2", "ไตรมาส 3", "ไตรมาส 3"];
+    for (let i = 0; i < projects.length; i++) {
+      const target = 120 + i * 40;
+      const actual = Math.round(target * (0.72 + i * 0.09));
+      await query(
+        `INSERT INTO project_report
+          (project_id, report_date, period, target_count, actual_count, achievement_pct,
+           budget_used, activity_summary, problem, suggestion, reporter, created_by, updated_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$12)`,
+        [
+          projects[i].id,
+          "2026-07-31",
+          periods[i],
+          target,
+          actual,
+          Math.round((actual / target) * 1000) / 10,
+          Math.round(Number(projects[i].budget ?? 0) * 0.65),
+          "ดำเนินกิจกรรมตามแผน ได้แก่ ประชาสัมพันธ์ในชุมชน ออกหน่วยให้บริการ และติดตามกลุ่มเป้าหมายรายบุคคล",
+          "กลุ่มเป้าหมายบางส่วนไม่สะดวกมารับบริการในวันเวลาราชการ",
+          "ปรับรูปแบบเป็นการออกหน่วยเชิงรุกในชุมชนช่วงเย็นและวันหยุด",
+          "นายวิชัย ศรีสุข",
+          by,
+        ],
+      );
+      n++;
+    }
+  }
+
+  /* ── ตัวอย่างผลประเมิน PCU + หลักฐานประกอบ ── */
+  if ((await count("pcu_assessment")) === 0) {
+    const criteria = await query<{ id: number; category_no: number; full_score: string }>(
+      `SELECT id, category_no, full_score FROM pcu_criteria ORDER BY sort_order LIMIT 28`,
+    );
+    for (const c of criteria) {
+      const full = Number(c.full_score);
+      // หมวดพื้นฐานให้เต็ม ส่วนหมวดบริการให้ราว 80-90% เพื่อให้เห็นผลทั้งผ่านและไม่ผ่าน
+      const score = c.category_no <= 3 ? full : Math.round(full * 0.85 * 10) / 10;
+      await query(
+        `INSERT INTO pcu_assessment
+          (fiscal_year, criteria_id, score, evidence, assessor, assess_date, created_by, updated_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$7)
+         ON CONFLICT (fiscal_year, criteria_id) DO NOTHING`,
+        [2569, c.id, score, "แฟ้มหลักฐานหมวด " + c.category_no, "คณะกรรมการพัฒนาคุณภาพ", "2026-08-01", by],
+      );
+      n++;
+    }
+  }
+
+  if ((await count("pcu_evidence")) === 0) {
+    const criteria = await query<{ id: number; item_no: string }>(
+      `SELECT id, item_no FROM pcu_criteria ORDER BY sort_order LIMIT 5`,
+    );
+    const kinds = ["คำสั่งแต่งตั้ง", "แผน / โครงการ", "รายงานการประชุม", "ทะเบียน / บันทึก", "ภาพถ่าย"];
+    for (let i = 0; i < criteria.length; i++) {
+      await query(
+        `INSERT INTO pcu_evidence
+          (fiscal_year, criteria_id, evidence_name, evidence_type, doc_date, location, responsible, created_by, updated_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$8)`,
+        [
+          2569,
+          criteria[i].id,
+          `หลักฐานประกอบเกณฑ์ข้อ ${criteria[i].item_no}`,
+          kinds[i % kinds.length],
+          "2026-07-15",
+          "แฟ้มงานคุณภาพ ห้องธุรการ",
+          "นางสาวกัญญา รุ่งเรือง",
+          by,
+        ],
       );
       n++;
     }

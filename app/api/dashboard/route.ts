@@ -48,18 +48,40 @@ export async function GET() {
        ) t`,
     );
 
-    /* ══════ กราฟผู้รับบริการรายเดือน ══════ */
+    /* ══════ กราฟจำนวนผู้ป่วยโรคระบาดรายเดือน (12 เดือนล่าสุด) ══════
+       ใช้ generate_series เพื่อให้เดือนที่ไม่มีผู้ป่วยแสดงเป็น 0
+       ไม่ใช่หายไปจากกราฟ — ไม่งั้นแนวโน้มจะอ่านผิด */
 
-    const trendRows = await query<{ stat_month: number; total: string }>(
-      `SELECT stat_month, SUM(count_value)::text AS total
-       FROM service_stat
-       WHERE stat_year = (SELECT MAX(stat_year) FROM service_stat)
-       GROUP BY stat_month ORDER BY stat_month`,
+    const trendRows = await query<{ m: string; total: string }>(
+      `WITH months AS (
+         SELECT generate_series(
+           date_trunc('month', CURRENT_DATE) - INTERVAL '11 months',
+           date_trunc('month', CURRENT_DATE),
+           INTERVAL '1 month'
+         ) AS m
+       )
+       SELECT to_char(months.m, 'YYYY-MM') AS m,
+              COUNT(dc.id)::text AS total
+       FROM months
+       LEFT JOIN disease_case dc
+         ON date_trunc('month', dc.onset_date) = months.m
+       GROUP BY months.m
+       ORDER BY months.m`,
     );
-    const trend = trendRows.map((r) => ({
-      label: TH_MONTH[Number(r.stat_month) - 1] ?? String(r.stat_month),
-      value: Number(r.total),
-    }));
+
+    const trend = trendRows.map((r) => {
+      const [y, mo] = r.m.split("-").map(Number);
+      const thYear = (y + 543) % 100;
+      return {
+        label: `${TH_MONTH[mo - 1]} ${String(thYear).padStart(2, "0")}`,
+        value: Number(r.total),
+      };
+    });
+
+    const casesThisMonth = await queryOne<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM disease_case
+       WHERE date_trunc('month', onset_date) = date_trunc('month', CURRENT_DATE)`,
+    );
 
     /* ══════ ผู้ป่วยโรคติดต่อ 12 เดือนล่าสุด แยกตามโรค ══════ */
 
@@ -243,6 +265,8 @@ export async function GET() {
         lowStock: Number(lowStock?.count ?? 0),
       },
       trend,
+      casesThisMonth: Number(casesThisMonth?.count ?? 0),
+      activeCases: Number(activeCases?.count ?? 0),
       diseases,
       budget: {
         fiscalYear: fiscalYear?.y ?? null,

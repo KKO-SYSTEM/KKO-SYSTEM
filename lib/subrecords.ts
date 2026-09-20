@@ -80,6 +80,28 @@ function computeFields(def: SubTableDef, body: Record<string, unknown>): Record<
       break;
     }
 
+    /* พื้นที่ระบาด — อัตราป่วยต่อประชากรพันคน */
+    case "outbreak_area": {
+      const cases = num("case_count");
+      const pop = num("population");
+      out.attack_rate =
+        cases !== null && pop !== null && pop > 0
+          ? Math.round((cases / pop) * 1000 * 100) / 100
+          : null;
+      break;
+    }
+
+    /* รายงานผลโครงการ — ร้อยละความสำเร็จเทียบเป้าหมาย */
+    case "project_report": {
+      const target = num("target_count");
+      const actual = num("actual_count");
+      out.achievement_pct =
+        target !== null && target > 0 && actual !== null
+          ? Math.round((actual / target) * 1000) / 10
+          : null;
+      break;
+    }
+
     /* ใบยืมพัสดุ — คืนแล้ว / เกินกำหนด */
     case "asset_loan": {
       const returned = body.returned_date;

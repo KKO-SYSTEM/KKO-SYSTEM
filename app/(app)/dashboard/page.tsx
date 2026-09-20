@@ -30,6 +30,8 @@ interface ExpiringItem {
 interface DashboardData {
   cards: { activeStaff: number; pendingDocs: number; expiring90: number; lowStock: number };
   trend: { label: string; value: number }[];
+  casesThisMonth: number;
+  activeCases: number;
   diseases: { label: string; value: number }[];
   budget: { fiscalYear: number | null; total: number; spent: number; projects: number };
   pcu: PcuCategory[];
@@ -125,14 +127,30 @@ export default function DashboardPage() {
       {/* ═══ กราฟผู้รับบริการ + งบประมาณ ═══ */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 card p-4">
-          <header className="mb-1">
-            <h2 className="font-semibold text-slate-800">จำนวนผู้รับบริการรายเดือน</h2>
-            <p className="text-xs text-slate-500">
-              รวมทุกประเภทบริการ จากข้อมูลที่บันทึกในระบบ
-            </p>
+          <header className="mb-3 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="font-semibold text-slate-800">จำนวนผู้ป่วยโรคระบาดรายเดือน</h2>
+              <p className="text-xs text-slate-500">
+                12 เดือนล่าสุด จากทะเบียนผู้ป่วยโรคติดต่อ (รง.506)
+              </p>
+            </div>
+            <div className="flex gap-4 shrink-0">
+              <div className="text-right">
+                <div className="text-xl font-bold text-slate-900 tabular-nums leading-none">
+                  {nf(data.casesThisMonth)}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">เดือนนี้ (ราย)</div>
+              </div>
+              <div className="text-right">
+                <div className="text-xl font-bold text-amber-600 tabular-nums leading-none">
+                  {nf(data.activeCases)}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">กำลังรักษา</div>
+              </div>
+            </div>
           </header>
-          {data.trend.length === 0 ? (
-            <EmptyBox text="ยังไม่มีข้อมูลสถิติผู้รับบริการ" />
+          {data.trend.every((t) => t.value === 0) ? (
+            <EmptyBox text="ยังไม่มีการบันทึกผู้ป่วยโรคติดต่อใน 12 เดือนที่ผ่านมา" />
           ) : (
             <TrendChart data={data.trend} />
           )}
@@ -470,23 +488,18 @@ function TrendChart({ data }: { data: { label: string; value: number }[] }) {
   useEffect(() => {
     if (!ref.current) return;
     const chart = new Chart(ref.current, {
-      type: "line",
+      type: "bar",
       data: {
         labels: data.map((d) => d.label),
         datasets: [
           {
-            label: "ผู้รับบริการ",
+            label: "ผู้ป่วย",
             data: data.map((d) => d.value),
-            borderColor: "#2a78d6",
-            backgroundColor: "rgba(42,120,214,0.08)",
-            borderWidth: 2,
-            fill: true,
-            tension: 0.35,
-            pointRadius: 4,
-            pointHoverRadius: 6,
-            pointBackgroundColor: "#2a78d6",
-            pointBorderColor: "#ffffff",
-            pointBorderWidth: 2,
+            backgroundColor: "#2a78d6",
+            hoverBackgroundColor: "#1f5fae",
+            borderRadius: 4,
+            borderSkipped: false,
+            maxBarThickness: 34,
           },
         ],
       },
@@ -513,7 +526,11 @@ function TrendChart({ data }: { data: { label: string; value: number }[] }) {
             beginAtZero: true,
             border: { display: false },
             grid: { color: "#e8edf1" },
-            ticks: { color: "#94a3b8", font: { size: 11 } },
+            ticks: {
+              color: "#94a3b8",
+              font: { size: 11 },
+              precision: 0, // จำนวนผู้ป่วยเป็นจำนวนเต็มเสมอ
+            },
           },
           x: {
             border: { display: false },

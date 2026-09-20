@@ -879,6 +879,104 @@ const STATEMENTS: string[] = [
     updated_by   TEXT
   )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS service_stat_uniq ON service_stat (stat_year, stat_month, service_type)`,
+  /* ═══════════════ ส่วนขยาย — เมนูย่อยที่เพิ่มให้ระบบครบทุกหน้า ═══════════════ */
+
+  /* พื้นที่ระบาด — ใช้ติดตามหมู่บ้าน/ชุมชนที่กำลังมีการระบาด */
+  `CREATE TABLE IF NOT EXISTS outbreak_area (
+    id              SERIAL PRIMARY KEY,
+    area_name       TEXT NOT NULL,
+    village_no      TEXT,
+    disease_name    TEXT NOT NULL,
+    first_case_date DATE,
+    last_case_date  DATE,
+    case_count      INTEGER DEFAULT 0,
+    population      INTEGER,
+    attack_rate     NUMERIC,
+    risk_level      TEXT,
+    status          TEXT DEFAULT 'กำลังระบาด',
+    measure         TEXT,
+    responsible     TEXT,
+    note            TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by      TEXT,
+    updated_by      TEXT
+  )`,
+  `CREATE INDEX IF NOT EXISTS outbreak_area_idx ON outbreak_area (disease_name, status)`,
+
+  /* รายงานผลโครงการ — ผลการดำเนินงานรายโครงการตามแผนยุทธศาสตร์ */
+  `CREATE TABLE IF NOT EXISTS project_report (
+    id               SERIAL PRIMARY KEY,
+    project_id       INTEGER NOT NULL REFERENCES project(id) ON DELETE CASCADE,
+    report_date      DATE NOT NULL,
+    period           TEXT,
+    target_count     INTEGER,
+    actual_count     INTEGER,
+    achievement_pct  NUMERIC,
+    budget_used      NUMERIC,
+    activity_summary TEXT,
+    problem          TEXT,
+    suggestion       TEXT,
+    reporter         TEXT,
+    note             TEXT,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by       TEXT,
+    updated_by       TEXT
+  )`,
+  `CREATE INDEX IF NOT EXISTS project_report_idx ON project_report (project_id, report_date DESC)`,
+
+  /* เขตรับผิดชอบของ อสม. */
+  `CREATE TABLE IF NOT EXISTS vhv_area (
+    id               SERIAL PRIMARY KEY,
+    vhv_id           INTEGER NOT NULL REFERENCES vhv(id) ON DELETE CASCADE,
+    village_no       TEXT,
+    village_name     TEXT,
+    zone_detail      TEXT,
+    household_count  INTEGER,
+    population_count INTEGER,
+    elderly_count    INTEGER,
+    chronic_count    INTEGER,
+    disabled_count   INTEGER,
+    note             TEXT,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by       TEXT,
+    updated_by       TEXT
+  )`,
+  `CREATE INDEX IF NOT EXISTS vhv_area_idx ON vhv_area (vhv_id)`,
+
+  /* หลักฐานประกอบการประเมินมาตรฐาน PCU (ผูกกับเกณฑ์รายข้อ) */
+  `CREATE TABLE IF NOT EXISTS pcu_evidence (
+    id            SERIAL PRIMARY KEY,
+    fiscal_year   INTEGER NOT NULL,
+    criteria_id   INTEGER NOT NULL REFERENCES pcu_criteria(id) ON DELETE CASCADE,
+    evidence_name TEXT NOT NULL,
+    evidence_type TEXT,
+    doc_date      DATE,
+    location      TEXT,
+    responsible   TEXT,
+    note          TEXT,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by    TEXT,
+    updated_by    TEXT
+  )`,
+  `CREATE INDEX IF NOT EXISTS pcu_evidence_idx ON pcu_evidence (fiscal_year, criteria_id)`,
+
+  /* ตารางบันทึกการเข้าร่วมประชุม อสม. สร้างไว้ก่อนหน้าโดยยังไม่มีคอลัมน์ผู้บันทึก
+     — เติมให้ครบเพื่อให้ใช้หน้าจอและ Audit Log ร่วมกับตารางอื่นได้ */
+  `ALTER TABLE vhv_attendance ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`,
+  `ALTER TABLE vhv_attendance ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`,
+  `ALTER TABLE vhv_attendance ADD COLUMN IF NOT EXISTS created_by TEXT`,
+  `ALTER TABLE vhv_attendance ADD COLUMN IF NOT EXISTS updated_by TEXT`,
+
+  /* ไฟล์แนบ — ref_key บอกว่าแนบกับทะเบียนไหน ("personnel" หรือ "vhv/meeting")
+     เพราะเลขที่รายการซ้ำกันได้ระหว่างตารางในระบบงานเดียวกัน */
+  `ALTER TABLE attachment ADD COLUMN IF NOT EXISTS ref_key TEXT`,
+  `UPDATE attachment SET ref_key = module_key WHERE ref_key IS NULL`,
+  `CREATE INDEX IF NOT EXISTS attachment_refkey_idx ON attachment (ref_key, record_id)`,
+
 ];
 
 export async function migrate(): Promise<number> {

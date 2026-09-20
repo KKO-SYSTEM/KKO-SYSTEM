@@ -686,6 +686,218 @@ const SUB_LIST: SubTableDef[] = [
       { key: "highlight", label: "ผลงานเด่น", type: "textarea", hideInTable: true },
     ],
   },
+  /* ═══════ 6b. ระบาดวิทยา — พื้นที่ระบาด ═══════ */
+  {
+    key: "epidemiology/area",
+    moduleKey: "epidemiology",
+    slug: "area",
+    table: "outbreak_area",
+    label: "พื้นที่ระบาด",
+    icon: "🗺️",
+    description:
+      "ติดตามหมู่บ้าน/ชุมชนที่กำลังมีการระบาด พร้อมอัตราป่วยต่อประชากรพันคน (ระบบคำนวณให้)",
+    defaultSort: "last_case_date",
+    defaultSortDir: "desc",
+    fields: [
+      { key: "area_name", label: "พื้นที่ / ชุมชน", type: "text", required: true },
+      { key: "village_no", label: "หมู่ที่", type: "text" },
+      { key: "disease_name", label: "โรคที่ระบาด", type: "text", required: true },
+      { key: "first_case_date", label: "ผู้ป่วยรายแรก", type: "date" },
+      { key: "last_case_date", label: "ผู้ป่วยรายล่าสุด", type: "date" },
+      { key: "case_count", label: "จำนวนผู้ป่วย (ราย)", type: "number" },
+      { key: "population", label: "ประชากรในพื้นที่", type: "number", hideInTable: true },
+      {
+        key: "attack_rate",
+        label: "อัตราป่วยต่อพันประชากร",
+        type: "number",
+        computed: true,
+        help: "ระบบคำนวณจาก จำนวนผู้ป่วย ÷ ประชากร × 1,000",
+      },
+      {
+        key: "risk_level",
+        label: "ระดับความเสี่ยง",
+        type: "select",
+        options: ["ต่ำ", "ปานกลาง", "สูง", "สูงมาก"],
+        badge: true,
+      },
+      {
+        key: "status",
+        label: "สถานะ",
+        type: "select",
+        options: ["กำลังระบาด", "เฝ้าระวัง", "ควบคุมได้", "ยุติการระบาด"],
+        badge: true,
+      },
+      { key: "measure", label: "มาตรการควบคุมโรค", type: "textarea", hideInTable: true },
+      { key: "responsible", label: "ผู้รับผิดชอบ", type: "text", hideInTable: true },
+      noteField,
+    ],
+  },
+
+  /* ═══════ 7b. ยุทธศาสตร์ — รายงานผลโครงการ ═══════ */
+  {
+    key: "strategy/report",
+    moduleKey: "strategy",
+    slug: "report",
+    table: "project_report",
+    label: "รายงานผลโครงการ",
+    icon: "📈",
+    description:
+      "รายงานผลการดำเนินงานรายโครงการ ระบบคำนวณร้อยละความสำเร็จจากเป้าหมายและผลงานจริงให้อัตโนมัติ",
+    defaultSort: "report_date",
+    defaultSortDir: "desc",
+    printPath: "/print/project-report",
+    printLabel: "พิมพ์รายงานผลโครงการ",
+    fields: [
+      {
+        key: "project_id",
+        label: "โครงการ",
+        type: "lookup",
+        required: true,
+        lookup: {
+          table: "project",
+          labelExpr: "project_name || ' (ปี ' || fiscal_year || ')'",
+          orderBy: "fiscal_year DESC, project_name",
+        },
+      },
+      { key: "report_date", label: "วันที่รายงาน", type: "date", required: true },
+      {
+        key: "period",
+        label: "รอบรายงาน",
+        type: "select",
+        options: ["ไตรมาส 1", "ไตรมาส 2", "ไตรมาส 3", "ไตรมาส 4", "รายปี"],
+      },
+      { key: "target_count", label: "เป้าหมาย", type: "number" },
+      { key: "actual_count", label: "ผลงานจริง", type: "number" },
+      {
+        key: "achievement_pct",
+        label: "ร้อยละความสำเร็จ",
+        type: "number",
+        computed: true,
+        help: "ระบบคำนวณจาก ผลงานจริง ÷ เป้าหมาย × 100",
+      },
+      { key: "budget_used", label: "งบที่ใช้ไป (บาท)", type: "number" },
+      { key: "activity_summary", label: "สรุปกิจกรรมที่ดำเนินการ", type: "textarea" },
+      { key: "problem", label: "ปัญหา / อุปสรรค", type: "textarea", hideInTable: true },
+      { key: "suggestion", label: "ข้อเสนอแนะ", type: "textarea", hideInTable: true },
+      { key: "reporter", label: "ผู้รายงาน", type: "text", hideInTable: true },
+      noteField,
+    ],
+  },
+
+  /* ═══════ 8b. PCU — หลักฐานประกอบ ═══════ */
+  {
+    key: "pcu/evidence",
+    moduleKey: "pcu",
+    slug: "evidence",
+    table: "pcu_evidence",
+    label: "หลักฐานประกอบ",
+    icon: "📎",
+    description:
+      "ทะเบียนหลักฐานที่ใช้ยืนยันการผ่านเกณฑ์แต่ละข้อ แนบไฟล์เอกสาร/ภาพถ่ายได้ที่ปุ่ม 📎 ท้ายรายการ",
+    defaultSort: "doc_date",
+    defaultSortDir: "desc",
+    fields: [
+      {
+        key: "fiscal_year",
+        label: "ปีงบประมาณ",
+        type: "number",
+        required: true,
+        help: "เช่น 2569",
+      },
+      {
+        key: "criteria_id",
+        label: "เกณฑ์ข้อที่",
+        type: "lookup",
+        required: true,
+        lookup: {
+          table: "pcu_criteria",
+          labelExpr: "item_no || ' ' || item_name",
+          orderBy: "sort_order",
+        },
+      },
+      { key: "evidence_name", label: "ชื่อหลักฐาน", type: "text", required: true },
+      {
+        key: "evidence_type",
+        label: "ประเภทหลักฐาน",
+        type: "select",
+        options: [
+          "เอกสาร",
+          "ภาพถ่าย",
+          "คำสั่งแต่งตั้ง",
+          "รายงานการประชุม",
+          "แผน / โครงการ",
+          "ทะเบียน / บันทึก",
+          "อื่น ๆ",
+        ],
+      },
+      { key: "doc_date", label: "วันที่ของเอกสาร", type: "date" },
+      { key: "location", label: "จัดเก็บไว้ที่", type: "text" },
+      { key: "responsible", label: "ผู้รับผิดชอบ", type: "text", hideInTable: true },
+      noteField,
+    ],
+  },
+
+  /* ═══════ 10b. อสม. — เขตรับผิดชอบ / บันทึกการเข้าร่วมประชุม ═══════ */
+  {
+    key: "vhv/area",
+    moduleKey: "vhv",
+    slug: "area",
+    table: "vhv_area",
+    label: "เขตรับผิดชอบ",
+    icon: "🏘️",
+    description: "พื้นที่และจำนวนหลังคาเรือนที่ อสม. แต่ละคนรับผิดชอบ",
+    defaultSort: "village_no",
+    defaultSortDir: "asc",
+    fields: [
+      lookupVhv(true),
+      { key: "village_no", label: "หมู่ที่", type: "text" },
+      { key: "village_name", label: "ชื่อหมู่บ้าน", type: "text" },
+      { key: "household_count", label: "หลังคาเรือน", type: "number" },
+      { key: "population_count", label: "ประชากร", type: "number" },
+      { key: "elderly_count", label: "ผู้สูงอายุ", type: "number", hideInTable: true },
+      { key: "chronic_count", label: "ผู้ป่วยเรื้อรัง", type: "number", hideInTable: true },
+      { key: "disabled_count", label: "ผู้พิการ", type: "number", hideInTable: true },
+      { key: "zone_detail", label: "รายละเอียดเขต", type: "textarea", hideInTable: true },
+      noteField,
+    ],
+  },
+  {
+    key: "vhv/attendance",
+    moduleKey: "vhv",
+    slug: "attendance",
+    table: "vhv_attendance",
+    label: "บันทึกการเข้าร่วมประชุม",
+    icon: "✅",
+    description:
+      "บันทึกการมาประชุมของ อสม. รายคน — อสม. หนึ่งคนบันทึกได้ครั้งเดียวต่อการประชุมหนึ่งครั้ง",
+    defaultSort: "id",
+    defaultSortDir: "desc",
+    fields: [
+      {
+        key: "meeting_id",
+        label: "การประชุม",
+        type: "lookup",
+        required: true,
+        lookup: {
+          table: "vhv_meeting",
+          labelExpr:
+            "COALESCE(meeting_no, 'ครั้งที่ -') || ' วันที่ ' || to_char(meeting_date, 'DD/MM/YYYY')",
+          orderBy: "meeting_date DESC",
+        },
+      },
+      lookupVhv(true),
+      {
+        key: "status",
+        label: "การเข้าร่วม",
+        type: "select",
+        required: true,
+        options: ["มา", "มาสาย", "ลา", "ขาด"],
+        badge: true,
+      },
+      noteField,
+    ],
+  },
+
 ];
 
 export const SUBTABLES: Record<string, SubTableDef> = Object.fromEntries(
@@ -719,4 +931,15 @@ export const LOOKUP_WHITELIST: Record<string, { labelExpr: string; orderBy: stri
     labelExpr: "project_name || ' (ปี ' || fiscal_year || ')'",
     orderBy: "fiscal_year DESC, project_name",
   },
+  vhv_meeting: {
+    labelExpr:
+      "COALESCE(meeting_no, 'ครั้งที่ -') || ' วันที่ ' || to_char(meeting_date, 'DD/MM/YYYY')",
+    orderBy: "meeting_date DESC",
+  },
+  pcu_criteria: { labelExpr: "item_no || ' ' || item_name", orderBy: "sort_order" },
+  inventory_item: {
+    labelExpr: "code || ' — ' || COALESCE(trade_name, generic_name)",
+    orderBy: "code",
+  },
+  supply_item: { labelExpr: "code || ' — ' || name", orderBy: "code" },
 };

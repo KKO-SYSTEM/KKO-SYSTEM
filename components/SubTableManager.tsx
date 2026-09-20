@@ -5,6 +5,7 @@ import type { FieldDef } from "@/lib/modules";
 import { STATUS_TONE } from "@/lib/modules";
 import type { SubTableDef } from "@/lib/subtables";
 import { SUB_STATUS_LABEL } from "@/lib/subtables";
+import AttachmentBox from "./AttachmentBox";
 
 interface Row extends Record<string, unknown> {
   id: number;
@@ -78,6 +79,7 @@ export default function SubTableManager({ def }: { def: SubTableDef }) {
   const [editing, setEditing] = useState<Row | "new" | null>(null);
   const [deleting, setDeleting] = useState<Row | null>(null);
   const [toast, setToast] = useState("");
+  const [attaching, setAttaching] = useState<Row | null>(null);
   const [options, setOptions] = useState<Record<string, { id: number; label: string }[]>>({});
 
   const pageSize = 25;
@@ -245,7 +247,7 @@ export default function SubTableManager({ def }: { def: SubTableDef }) {
                     {f.label}
                   </th>
                 ))}
-                {canWrite && <th className="px-4 py-2" />}
+                <th className="px-4 py-2" />
               </tr>
             </thead>
             <tbody>
@@ -277,44 +279,53 @@ export default function SubTableManager({ def }: { def: SubTableDef }) {
                         )}
                       </td>
                     ))}
-                    {canWrite && (
-                      <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                        {def.detailPath && (
-                          <a
-                            href={`${def.detailPath}/${row.id}`}
-                            title="เปิดรายละเอียด / จัดการรายการ"
-                            className="text-brand-700 hover:underline px-1 text-xs font-medium"
-                          >
-                            เปิด
-                          </a>
-                        )}
-                        {def.printPath && (
-                          <a
-                            href={`${def.printPath}/${row.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title={def.printLabel ?? "พิมพ์"}
-                            className="text-slate-400 hover:text-brand-700 px-1"
-                          >
-                            🖨
-                          </a>
-                        )}
-                        <button
-                          onClick={() => setEditing(row)}
-                          title="แก้ไข"
+                    <td className="px-4 py-2.5 text-right whitespace-nowrap no-print">
+                      {def.detailPath && (
+                        <a
+                          href={`${def.detailPath}/${row.id}`}
+                          title="เปิดรายละเอียด / จัดการรายการ"
+                          className="text-brand-700 hover:underline px-1 text-xs font-medium"
+                        >
+                          เปิด
+                        </a>
+                      )}
+                      {def.printPath && (
+                        <a
+                          href={`${def.printPath}/${row.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={def.printLabel ?? "พิมพ์"}
                           className="text-slate-400 hover:text-brand-700 px-1"
                         >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => setDeleting(row)}
-                          title="ลบ"
-                          className="text-slate-400 hover:text-rose-600 px-1"
-                        >
-                          🗑️
-                        </button>
-                      </td>
-                    )}
+                          🖨
+                        </a>
+                      )}
+                      <button
+                        onClick={() => setAttaching(row)}
+                        title="ไฟล์แนบ"
+                        className="text-slate-400 hover:text-brand-700 px-1"
+                      >
+                        📎
+                      </button>
+                      {canWrite && (
+                        <>
+                          <button
+                            onClick={() => setEditing(row)}
+                            title="แก้ไข"
+                            className="text-slate-400 hover:text-brand-700 px-1"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => setDeleting(row)}
+                            title="ลบ"
+                            className="text-slate-400 hover:text-rose-600 px-1"
+                          >
+                            🗑️
+                          </button>
+                        </>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
@@ -454,6 +465,33 @@ export default function SubTableManager({ def }: { def: SubTableDef }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ไฟล์แนบของรายการ */}
+      {attaching && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 flex items-start sm:items-center justify-center p-4 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setAttaching(null);
+          }}
+        >
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg my-4">
+            <div className="px-5 py-4 border-b flex items-center justify-between">
+              <div className="font-semibold text-slate-700">
+                ไฟล์แนบ — {def.label} #{attaching.id}
+              </div>
+              <button
+                onClick={() => setAttaching(null)}
+                className="text-slate-400 hover:text-slate-700 text-xl leading-none"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="p-5">
+              <AttachmentBox refKey={def.key} recordId={attaching.id} />
+            </div>
           </div>
         </div>
       )}

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { FieldDef, ModuleDef } from "@/lib/modules";
 import { STATUS_TONE } from "@/lib/modules";
+import AttachmentBox from "./AttachmentBox";
 
 interface Row extends Record<string, unknown> {
   id: number;
@@ -20,6 +21,7 @@ export default function RecordManager({ mod }: { mod: ModuleDef }) {
   const [editing, setEditing] = useState<Row | null | "new">(null);
   const [deleting, setDeleting] = useState<Row | null>(null);
   const [toast, setToast] = useState("");
+  const [attaching, setAttaching] = useState<Row | null>(null);
 
   const pageSize = 25;
   const tableFields = mod.fields.filter((f) => !f.hideInTable);
@@ -126,7 +128,7 @@ export default function RecordManager({ mod }: { mod: ModuleDef }) {
                     {f.label}
                   </th>
                 ))}
-                {canWrite && <th className="px-4 py-2.5 w-20" />}
+                <th className="px-4 py-2.5 w-28" />
               </tr>
             </thead>
             <tbody>
@@ -150,24 +152,33 @@ export default function RecordManager({ mod }: { mod: ModuleDef }) {
                         <CellValue field={f} value={row[f.key]} />
                       </td>
                     ))}
-                    {canWrite && (
-                      <td className="px-4 py-2.5 text-right whitespace-nowrap no-print">
-                        <button
-                          onClick={() => setEditing(row)}
-                          className="text-slate-400 hover:text-brand-700 px-1"
-                          title="แก้ไข"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => setDeleting(row)}
-                          className="text-slate-400 hover:text-rose-600 px-1"
-                          title="ลบ"
-                        >
-                          🗑️
-                        </button>
-                      </td>
-                    )}
+                    <td className="px-4 py-2.5 text-right whitespace-nowrap no-print">
+                      <button
+                        onClick={() => setAttaching(row)}
+                        className="text-slate-400 hover:text-brand-700 px-1"
+                        title="ไฟล์แนบ"
+                      >
+                        📎
+                      </button>
+                      {canWrite && (
+                        <>
+                          <button
+                            onClick={() => setEditing(row)}
+                            className="text-slate-400 hover:text-brand-700 px-1"
+                            title="แก้ไข"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => setDeleting(row)}
+                            className="text-slate-400 hover:text-rose-600 px-1"
+                            title="ลบ"
+                          >
+                            🗑️
+                          </button>
+                        </>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
@@ -209,6 +220,33 @@ export default function RecordManager({ mod }: { mod: ModuleDef }) {
             load();
           }}
         />
+      )}
+
+      {/* ไฟล์แนบของรายการ */}
+      {attaching && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 flex items-start sm:items-center justify-center p-4 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setAttaching(null);
+          }}
+        >
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg my-4">
+            <div className="px-5 py-4 border-b flex items-center justify-between">
+              <div className="font-semibold text-slate-700">
+                ไฟล์แนบ — {mod.label} #{attaching.id}
+              </div>
+              <button
+                onClick={() => setAttaching(null)}
+                className="text-slate-400 hover:text-slate-700 text-xl leading-none"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="p-5">
+              <AttachmentBox refKey={mod.key} recordId={attaching.id} />
+            </div>
+          </div>
+        </div>
       )}
 
       {deleting && (
